@@ -1,6 +1,6 @@
 # Nacos Setup
 
-一个强大的 Nacos 安装和管理工具，支持单机模式和集群模式的快速部署。
+一个强大的 Nacos 安装和管理工具，支持 Nacos Server 端一键部署（单机/集群）。
 
 ## ✨ 特性
 
@@ -13,9 +13,31 @@
 - 📦 **缓存下载**：下载的 Nacos 包会被缓存，避免重复下载
 - 🌐 **全局可用**：安装后可在任何目录下使用 `nacos-setup` 命令
 
+## 📌 当前版本
+
+- nacos-setup：0.0.1
+
 ## 📦 安装
 
-### 方式 1：从源码安装（推荐）
+### 方式 1：一键在线安装（推荐）
+
+#### Linux / macOS
+
+```bash
+curl -fsSL https://nacos.io/nacos-installer.sh | sudo bash
+```
+
+#### Windows（PowerShell 原生）
+
+```powershell
+# 一键安装 nacos-setup（会生成 nacos-setup 命令）
+powershell -NoProfile -ExecutionPolicy Bypass -Command "iwr -UseBasicParsing https://nacos.io/nacos-installer.ps1 | iex"
+
+# 运行 nacos-setup（同 bash 版参数）
+nacos-setup -v 3.1.1
+```
+
+### 方式 2：从源码安装
 
 ```bash
 # 克隆仓库
@@ -23,13 +45,7 @@ git clone https://github.com/your-repo/nacos-setup.git
 cd nacos-setup
 
 # 安装到系统（需要 sudo 权限）
-sudo bash install.sh
-```
-
-### 方式 2：一键在线安装
-
-```bash
-curl -fsSL https://your-domain.com/install.sh | sudo bash
+sudo bash nacos-installer.sh
 ```
 
 ### 验证安装
@@ -38,9 +54,29 @@ curl -fsSL https://your-domain.com/install.sh | sudo bash
 nacos-setup --help
 ```
 
+### 可选：安装 nacos-cli
+
+nacos-cli 是独立的 Nacos 命令行管理工具，默认不会安装。如需使用，可以单独安装：
+
+#### Linux / macOS
+
+```bash
+# 仅安装 nacos-cli
+curl -fsSL https://nacos.io/nacos-installer.sh | sudo bash -s -- --cli
+```
+
+#### Windows
+
+```powershell
+# 仅安装 nacos-cli
+iwr -UseBasicParsing https://nacos.io/nacos-installer.ps1 -OutFile $env:TEMP\nacos-installer.ps1; & $env:TEMP\nacos-installer.ps1 -cli; Remove-Item $env:TEMP\nacos-installer.ps1
+```
+
+更多 nacos-cli 使用说明，请参考：https://github.com/nacos-group/nacos-cli
+
 ## 🚀 快速开始
 
-### 单机模式
+### 场景一：本地部署单机 Nacos 实例
 
 ```bash
 # 安装默认版本（3.1.1）
@@ -56,10 +92,10 @@ nacos-setup -p 18848 -d /opt/nacos
 nacos-setup --detach
 ```
 
-### 集群模式
+### 场景二：本地部署 Nacos 集群
 
 ```bash
-# 创建 3 节点集群
+# 创建 3 节点集群（prod 为集群 ID）
 nacos-setup -c prod
 
 # 创建 5 节点集群
@@ -75,11 +111,20 @@ nacos-setup -c prod --leave 2
 nacos-setup -c prod --clean
 ```
 
-### 数据源配置
+### 场景三：使用外置数据库（MySQL）
+
+说明：以上命令默认使用内置 Derby 数据库。若需使用外置 MySQL，请先进行数据源配置。
 
 ```bash
-# 配置全局数据源（MySQL/PostgreSQL）
+# 配置全局数据源（MySQL）
 nacos-setup --datasource-conf
+
+# 按提示填写 MySQL 连接信息后，再进行安装/部署
+# 示例：
+# 单机模式
+nacos-setup -v 3.1.1
+# 集群模式
+nacos-setup -c prod -n 3
 ```
 
 ## 📖 使用说明
@@ -207,10 +252,10 @@ bash bin/shutdown.sh
 
 ```bash
 # 卸载 nacos-setup
-sudo bash install.sh uninstall
+sudo bash nacos-installer.sh uninstall
 
 # 或
-sudo bash install.sh -u
+sudo bash nacos-installer.sh -u
 ```
 
 卸载后：

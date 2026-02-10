@@ -32,6 +32,12 @@ source "$SCRIPT_DIR/process_manager.sh"
 STARTED_NACOS_PID=""
 CLEANUP_DONE=false
 
+# Security configuration (set by configure_standalone_security)
+TOKEN_SECRET=""
+IDENTITY_KEY=""
+IDENTITY_VALUE=""
+NACOS_PASSWORD=""
+
 # ============================================================================
 # Cleanup Handler
 # ============================================================================
@@ -162,6 +168,9 @@ run_standalone_mode() {
         print_info "Starting Nacos in standalone mode..."
         echo ""
         
+        # Record start time
+        local start_time=$(date +%s)
+        
         local pid=$(start_nacos_process "$INSTALL_DIR" "standalone" "false")
         if [ -z "$pid" ]; then
             print_warn "Could not determine Nacos PID"
@@ -173,7 +182,9 @@ run_standalone_mode() {
         
         # Wait for readiness and initialize password
         if wait_for_nacos_ready "$SERVER_PORT" "$CONSOLE_PORT" "$VERSION"; then
-            print_info "Nacos is ready!"
+            local end_time=$(date +%s)
+            local elapsed=$((end_time - start_time))
+            print_info "Nacos is ready in ${elapsed}s!"
             echo ""
             
             if [ -n "$NACOS_PASSWORD" ] && [ "$NACOS_PASSWORD" != "nacos" ]; then
