@@ -120,6 +120,26 @@ _find_python_310_plus() {
     echo "$out" | tail -n 1
 }
 
+_ensure_python_310_plus_with_uv() {
+    local py_exe=$(_find_python_310_plus || true)
+    if [ -n "$py_exe" ]; then
+        printf '%s\n' "$py_exe"
+        return 0
+    fi
+
+    # Fallback: rely on uv-managed Python even if system Python is unavailable.
+    if _skill_scanner_runas_target_user uv python install 3.10 >/dev/null 2>&1; then
+        py_exe=$(_skill_scanner_runas_target_user uv python find 3.10 2>/dev/null || true)
+    fi
+
+    if [ -n "$py_exe" ] && _skill_scanner_runas_target_user "$py_exe" -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)" 2>/dev/null; then
+        printf '%s\n' "$py_exe"
+        return 0
+    fi
+
+    return 1
+}
+
 _skill_scanner_venv_dir_for_user() {
     _skill_scanner_runas_target_user bash -c 'printf "%s/%s\n" "$HOME" "'"$SKILL_SCANNER_VENV_PATH_RELATIVE"'"'
 }
@@ -209,17 +229,17 @@ maybe_install_skill_scanner_for_nacos() {
         print_info "sudo detected: using user ${SUDO_USER}'s environment for Python / uv (root often lacks Homebrew Python)."
     fi
 
-    local py_exe
-    py_exe=$(_find_python_310_plus) || {
-        print_warn "skill-scanner needs Python 3.10+ on PATH for your user."
-        print_warn "Reference: https://github.com/cisco-ai-defense/skill-scanner"
-        return 0
-    }
-
     if ! _skill_scanner_runas_target_user bash -c 'command -v uv >/dev/null 2>&1'; then
         print_warn "skill-scanner step requires uv. Please install uv first: https://docs.astral.sh/uv/getting-started/installation/"
         return 0
     fi
+
+    local py_exe
+    py_exe=$(_ensure_python_310_plus_with_uv) || {
+        print_warn "Could not prepare Python 3.10+ with uv. Please install Python 3.10+ and retry."
+        print_warn "Reference: https://docs.astral.sh/uv/guides/install-python/"
+        return 0
+    }
 
     local venv_dir
     venv_dir=$(_skill_scanner_venv_dir_for_user)
