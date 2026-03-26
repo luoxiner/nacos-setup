@@ -183,6 +183,18 @@ _skill_scanner_installed_in_venv() {
     _skill_scanner_runas_target_user "$venv_python" -m pip show "$SKILL_SCANNER_PYPI_PACKAGE" >/dev/null 2>&1
 }
 
+_confirm_skill_scanner_install() {
+    # Force explicit user confirmation and avoid blocking in non-interactive contexts.
+    if [ ! -t 0 ]; then
+        print_warn "skill-scanner is not installed and interactive confirmation is unavailable (non-interactive shell). Skipping installation."
+        return 1
+    fi
+
+    local confirm
+    read -r -p "Install Cisco skill-scanner into ~/ai-infra/.venv now? (y/N): " confirm
+    [[ "$confirm" =~ ^[Yy]$ ]]
+}
+
 _skill_scanner_ensure_version_ge() {
     if declare -F version_ge >/dev/null 2>&1; then
         return 0
@@ -230,7 +242,8 @@ maybe_install_skill_scanner_for_nacos() {
     fi
 
     if ! _skill_scanner_runas_target_user bash -c 'command -v uv >/dev/null 2>&1'; then
-        print_warn "skill-scanner step requires uv. Please install uv first: https://docs.astral.sh/uv/getting-started/installation/"
+        print_warn "No uv environment detected. Cannot install ${SKILL_SCANNER_PYPI_PACKAGE}."
+        print_warn "Please install uv first: https://docs.astral.sh/uv/getting-started/installation/"
         return 0
     fi
 
@@ -247,6 +260,11 @@ maybe_install_skill_scanner_for_nacos() {
 
     if [ -x "$venv_python" ] && _skill_scanner_installed_in_venv "$venv_python"; then
         print_info "skill-scanner already installed in ${venv_dir} (skip)."
+        return 0
+    fi
+
+    if ! _confirm_skill_scanner_install; then
+        print_info "Skip installing ${SKILL_SCANNER_PYPI_PACKAGE} (not confirmed)."
         return 0
     fi
 
